@@ -2,6 +2,8 @@
 // PAGE ELEMENT MODELS (Updated)
 // =======================
 
+import 'dart:developer';
+
 class PageModel {
   final String version;
   final BookModel book;
@@ -101,6 +103,7 @@ class PageElement {
   });
 
   factory PageElement.fromJson(Map<String, dynamic> json) {
+    print(json);
     return PageElement(
       id: json['id'],
       type: ElementTypeX.fromString(json['type']),
@@ -164,6 +167,9 @@ class ElementStyle {
   final double? paddingRight;
   final double? paddingBottom;
   final double? flexGrow;
+  final double? flexShrink;
+  final String? flexBasis;
+
   final String? textAlign;
   final String? fontWeight;
 
@@ -180,22 +186,27 @@ class ElementStyle {
     this.flexGrow,
     this.textAlign,
     this.fontWeight,
+    this.flexShrink,
+    this.flexBasis,
   });
 
   factory ElementStyle.fromJson(Map<String, dynamic> json) {
+    print(json['flex-basis']);
     return ElementStyle(
       fontSize: _toDouble(json['fontSize']),
       color: json['color'],
       background: json['background'],
       width: _toDouble(json['width']),
       height: _toDouble(json['height']),
-      paddingTop: _toDouble(json['paddingTop']),
-      paddingLeft: _toDouble(json['paddingLeft']),
-      paddingRight: _toDouble(json['paddingRight']),
-      paddingBottom: _toDouble(json['paddingBottom']),
-      flexGrow: _toDouble(json['flexGrow']),
+      paddingTop: _toDouble(json['padding-top']),
+      paddingLeft: _toDouble(json['padding-left']),
+      paddingRight: _toDouble(json['padding-right']),
+      paddingBottom: _toDouble(json['padding-bottom']),
+      flexGrow: _toDouble(json['flex-grow']),
+      flexShrink: _toDouble(json['flex-shrink']),
+      flexBasis: json['flex-basis'],
       textAlign: json['textAlign'],
-      fontWeight: json['fontWeight'],
+      fontWeight: json['font-weight'],
     );
   }
 

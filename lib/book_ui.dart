@@ -174,7 +174,8 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
           overflow: TextOverflow.visible,
           textAlign: _parseTextAlign(e.style.textAlign),
           style: TextStyle(
-            fontSize: e.style.fontSize ?? 14,
+            fontFamily: 'Tinos',
+            fontSize: e.style.fontSize ?? 17,
             color: _cssColor(e.style.color),
             fontWeight: e.style.fontWeight == 'bold'
                 ? FontWeight.bold
@@ -192,7 +193,11 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
         return AudioElement(url: e.data.src ?? '');
 
       case ElementType.model3d:
-        return Model3DElement(src: e.data.src ?? '');
+        return SizedBox(
+          height: 300, // 👈 REQUIRED
+          width: double.infinity,
+          child: Model3DElement(src: e.data.src ?? ''),
+        );
 
       case ElementType.math:
         return Text(

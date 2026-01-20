@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
@@ -8,6 +10,9 @@ class Model3DElement extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    log(
+      "Modelling --------------------------------------------------------------",
+    );
     return ModelViewer(
       src: src,
       alt: "3D model",
@@ -15,7 +20,8 @@ class Model3DElement extends StatelessWidget {
       cameraControls: true,
       disableZoom: false,
       ar: false,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
+      shadowIntensity: 1,
     );
   }
 }
