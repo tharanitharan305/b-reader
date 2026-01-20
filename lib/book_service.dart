@@ -8,12 +8,13 @@ import 'models.dart';
 
 class BookService {
   // ANDROID EMULATOR FIX
-  static const String _baseUrl = 'http://192.168.0.13:3000';
+  static const String _baseUrl = 'http://192.168.0.9:3000';
 
   Future<PageModel> parseHtmlCss({
     required String html,
     required String css,
   }) async {
+    log("currently in parseHtml with url ${_baseUrl}");
     final response = await http.post(
       Uri.parse('$_baseUrl/parse'),
       headers: {'Content-Type': 'application/json'},

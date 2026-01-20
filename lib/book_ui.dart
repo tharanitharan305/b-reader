@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'book_service.dart';
@@ -22,7 +24,7 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
 
   Future<void> _renderBook() async {
     setState(() => _loading = true);
-
+    log("message");
     try {
       final model = await _service.parseHtmlCss(
         html: _htmlController.text,
@@ -46,57 +48,12 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
         title: const Text('HTML → Flutter Book Reader'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.play_arrow),
+            icon: const Icon(Icons.play_arrow, color: Colors.amber),
             onPressed: _renderBook,
           ),
         ],
       ),
-      body: Row(
-        children: [
-          // Expanded(child: _buildEditor()),
-          // const VerticalDivider(width: 1),
-          Expanded(child: _buildPreview()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEditor() {
-    return Column(
-      children: [
-        _codeEditor('HTML', _htmlController),
-        const Divider(height: 1),
-        _codeEditor('CSS', _cssController),
-      ],
-    );
-  }
-
-  Widget _codeEditor(String title, TextEditingController controller) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.grey.shade200,
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              maxLines: null,
-              expands: true,
-              style: const TextStyle(fontFamily: 'monospace'),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.all(8),
-              ),
-            ),
-          ),
-        ],
-      ),
+      body: _buildPreview(),
     );
   }
 
@@ -113,14 +70,18 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
     final elements = page.layers.first.elements;
 
     return Center(
-      child: Container(
-        width: page.size.width,
-        height: page.size.height,
-        color: _cssColor(page.background),
-        child: Stack(
-          children: elements
-              .map((e) => _renderRecursive(e, isRoot: true))
-              .toList(),
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: page.size.width),
+          child: Container(
+            width: page.size.width,
+            color: _cssColor(page.background),
+            child: Column(
+              // 🔥 NOT STACK
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: elements.map((e) => _renderRecursive(e)).toList(),
+            ),
+          ),
         ),
       ),
     );
@@ -128,70 +89,80 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
 
   /// The main recursive renderer that fixes the ParentData error
   Widget _renderRecursive(PageElement e, {bool isRoot = false}) {
-    Widget current;
+    Widget child;
 
-    // 1. Build Content (Layout vs Leaf)
+    // 1️⃣ FLOW LAYOUT
     if (e.type == ElementType.row || e.type == ElementType.column) {
-      final children = e.children.map((c) => _renderRecursive(c)).toList();
-      current = e.type == ElementType.row
+      final children = e.children.map((c) {
+        final childWidget = _renderRecursive(c);
+
+        // 🔥 CRITICAL FIX: Row children must be Flexible
+        if (e.type == ElementType.row && c.style.width == null) {
+          return Flexible(child: childWidget);
+        }
+
+        return childWidget;
+      }).toList();
+
+      child = e.type == ElementType.row
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: children,
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: children,
             );
     } else {
-      current = _renderLeaf(e);
+      child = _renderLeaf(e);
     }
 
-    // 2. Apply Padding and Constraints
-    // Note: CSS padding is applied outside the content
-    current = Padding(
-      padding: EdgeInsets.only(
-        top: e.style.paddingTop ?? 0,
-        left: e.style.paddingLeft ?? 0,
-        right: e.style.paddingRight ?? 0,
-        bottom: e.style.paddingBottom ?? 0,
-      ),
+    // 2️⃣ APPLY PADDING (instead of transform)
+    final padding = EdgeInsets.only(
+      top: e.style.paddingTop ?? 0,
+      left: e.style.paddingLeft ?? 0,
+      right: e.style.paddingRight ?? 0,
+      bottom: e.style.paddingBottom ?? 0,
+    );
+
+    // 3️⃣ CONSTRAIN WIDTH FOR TEXT SAFETY
+    Widget boxed = ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: e.style.width ?? double.infinity),
       child: Container(
         width: e.style.width,
-        height: e.style.height,
-        decoration: BoxDecoration(color: _cssColor(e.style.background)),
-        child: current,
+        decoration: BoxDecoration(
+          color: _cssColor(e.style.background),
+          // border: Border.all(
+          //   color: e.type == ElementType.row
+          //       ? Colors.red
+          //       : e.type == ElementType.column
+          //       ? Colors.amber
+          //       : Colors.black,
+          // ),
+        ),
+        child: child,
       ),
     );
 
-    // 3. Handle Layout Accuracy (flex-grow)
-    // Wrap in Expanded ONLY if inside a Flex (Row/Column) and has flex-grow
+    Widget padded = Padding(padding: padding, child: boxed);
+
+    // 4️⃣ FLEX GROW (must wrap container)
     if (!isRoot && e.style.flexGrow != null && e.style.flexGrow! > 0) {
-      current = Expanded(flex: e.style.flexGrow!.toInt(), child: current);
+      padded = Expanded(flex: e.style.flexGrow!.toInt(), child: padded);
     }
 
-    // 4. Handle Positioning Accuracy
-    // FIX: Only use Positioned if parent is a Stack (isRoot).
-    // Otherwise use Transform to avoid ParentData error while maintaining visual offset.
-    if (e.frame != null) {
-      if (isRoot) {
-        return Positioned(
-          left: e.frame!.x,
-          top: e.frame!.y,
-          width: e.frame!.width,
-          height: e.frame!.height,
-          child: current,
-        );
-      } else {
-        return Transform.translate(
-          offset: Offset(e.frame!.x, e.frame!.y),
-          child: current,
-        );
-      }
+    // 5️⃣ ABSOLUTE POSITIONING (ONLY HERE)
+    if (e.frame != null && isRoot) {
+      return Positioned(
+        left: e.frame!.x,
+        top: e.frame!.y,
+        width: e.frame!.width ?? e.style.width,
+        height: e.frame!.height ?? e.style.height,
+        child: padded,
+      );
     }
 
-    return current;
+    return padded;
   }
 
   Widget _renderLeaf(PageElement e) {
@@ -199,9 +170,11 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
       case ElementType.text:
         return Text(
           e.data.value ?? '',
+          softWrap: true,
+          overflow: TextOverflow.visible,
           textAlign: _parseTextAlign(e.style.textAlign),
           style: TextStyle(
-            fontSize: e.style.fontSize,
+            fontSize: e.style.fontSize ?? 14,
             color: _cssColor(e.style.color),
             fontWeight: e.style.fontWeight == 'bold'
                 ? FontWeight.bold
@@ -210,12 +183,7 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
         );
 
       case ElementType.image:
-        return Image.network(
-          e.data.src ?? '',
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) =>
-              const Icon(Icons.broken_image),
-        );
+        return Image.network(e.data.src ?? '', fit: BoxFit.contain);
 
       case ElementType.video:
         return VideoElement(url: e.data.src ?? '');
