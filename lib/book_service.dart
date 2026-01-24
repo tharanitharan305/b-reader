@@ -8,7 +8,7 @@ import 'models.dart';
 
 class BookService {
   // ANDROID EMULATOR FIX
-  static const String _baseUrl = 'http://192.168.0.5:3000';
+  static const String _baseUrl = 'http://192.168.0.23:3000';
 
   Future<PageModel> parseHtmlCss({
     required String html,

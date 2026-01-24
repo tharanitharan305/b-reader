@@ -194,8 +194,8 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
 
       case ElementType.model3d:
         return SizedBox(
-          height: 300, // 👈 REQUIRED
-          width: double.infinity,
+          height: 400,
+          width: 600,
           child: Model3DElement(src: e.data.src ?? ''),
         );
 
