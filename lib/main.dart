@@ -1,5 +1,8 @@
-import 'package:btab/home/bloc/home_bloc.dart';
-import 'package:flutter/material.dart';import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'home/bloc/home_bloc.dart';
+import 'home/data/home_repo.dart';
+import 'home/data/home_services.dart';
 import 'home/ui/home.dart';
 
 void main() {
@@ -13,23 +16,26 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'B-Reader',
       theme: ThemeData(
-        // FIX 1: Add 'ColorScheme' before '.fromSeed'
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      // FIX 2: Trigger the initial event so the Bloc starts fetching data
-      home: MultiBlocProvider(
+      home: MultiRepositoryProvider(
         providers: [
-          BlocProvider(
-            create: (context) => HomeBloc()..add(HomeGetBooksEvent()),
-          ),
+          RepositoryProvider(create: (context) => HomeRepo(HomeServices())),
         ],
-        child: const HomePage(),
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => HomeBloc(
+                homeRepo: context.read<HomeRepo>(),
+              )..add(HomeGetBooksEvent()),
+            ),
+          ],
+          child: const HomePage(),
+        ),
       ),
     );
   }
 }
-
-// Note: MyHomePage is currently unused because 'home' points to HomePage

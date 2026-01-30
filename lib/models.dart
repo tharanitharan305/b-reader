@@ -1,20 +1,26 @@
-// =======================
-// PAGE ELEMENT MODELS (Updated)
-// =======================
-
 import 'dart:developer';
 
 class PageModel {
+  final String bookName;
   final String version;
   final BookModel book;
 
-  PageModel({required this.version, required this.book});
+  PageModel({required this.version, required this.book,required this.bookName});
 
   factory PageModel.fromJson(Map<String, dynamic> json) {
     return PageModel(
       version: json['version'],
-      book: BookModel.fromJson(json['book']),
+      book: BookModel.fromList(json['pages']),
+      bookName: json["title"]
     );
+  }
+
+  // ADDED: toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'version': version,
+      'pages': book.pages.map((p) => p.toJson()).toList(),
+    };
   }
 }
 
@@ -23,11 +29,14 @@ class BookModel {
 
   BookModel({required this.pages});
 
-  factory BookModel.fromJson(Map<String, dynamic> json) {
+  factory BookModel.fromList(List<dynamic> list) {
     return BookModel(
-      pages: (json['pages'] as List).map((e) => PageData.fromJson(e)).toList(),
+      pages: list.map((e) => PageData.fromJson(e as Map<String, dynamic>)).toList(),
     );
   }
+
+// Note: PageModel handles the serialization of the list
+// but we can add a helper here if needed.
 }
 
 class PageData {
@@ -53,6 +62,16 @@ class PageData {
           .toList(),
     );
   }
+
+  // ADDED: toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'size': size.toJson(),
+      'background': background,
+      'layers': layers.map((l) => l.toJson()).toList(),
+    };
+  }
 }
 
 class PageLayer {
@@ -69,6 +88,14 @@ class PageLayer {
           .toList(),
     );
   }
+
+  // ADDED: toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'elements': elements.map((e) => e.toJson()).toList(),
+    };
+  }
 }
 
 class PageSize {
@@ -82,6 +109,14 @@ class PageSize {
       width: (json['width'] as num).toDouble(),
       height: (json['height'] as num).toDouble(),
     );
+  }
+
+  // ADDED: toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'width': width,
+      'height': height,
+    };
   }
 }
 
@@ -103,7 +138,6 @@ class PageElement {
   });
 
   factory PageElement.fromJson(Map<String, dynamic> json) {
-    print(json);
     return PageElement(
       id: json['id'],
       type: ElementTypeX.fromString(json['type']),
@@ -115,24 +149,26 @@ class PageElement {
           .toList(),
     );
   }
+
+  // ADDED: toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type.name, // Converts enum to string
+      'frame': frame?.toJson(),
+      'style': style.toJson(),
+      'data': data.toJson(),
+      'children': children.map((c) => c.toJson()).toList(),
+    };
+  }
 }
 
-enum ElementType {
-  row,
-  column,
-  divider,
-  text,
-  image,
-  video,
-  audio,
-  math,
-  model3d,
-}
+enum ElementType { row, column, divider, text, image, video, audio, math, model3d }
 
 extension ElementTypeX on ElementType {
   static ElementType fromString(String value) {
     return ElementType.values.firstWhere(
-      (e) => e.name == value,
+          (e) => e.name == value,
       orElse: () => ElementType.column,
     );
   }
@@ -154,6 +190,16 @@ class Frame {
       height: (json['height'] as num?)?.toDouble(),
     );
   }
+
+  // ADDED: toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'x': x,
+      'y': y,
+      'width': width,
+      'height': height,
+    };
+  }
 }
 
 class ElementStyle {
@@ -169,29 +215,16 @@ class ElementStyle {
   final double? flexGrow;
   final double? flexShrink;
   final String? flexBasis;
-
   final String? textAlign;
   final String? fontWeight;
 
   ElementStyle({
-    this.fontSize,
-    this.color,
-    this.background,
-    this.width,
-    this.height,
-    this.paddingTop,
-    this.paddingLeft,
-    this.paddingRight,
-    this.paddingBottom,
-    this.flexGrow,
-    this.textAlign,
-    this.fontWeight,
-    this.flexShrink,
-    this.flexBasis,
+    this.fontSize, this.color, this.background, this.width, this.height,
+    this.paddingTop, this.paddingLeft, this.paddingRight, this.paddingBottom,
+    this.flexGrow, this.textAlign, this.fontWeight, this.flexShrink, this.flexBasis,
   });
 
   factory ElementStyle.fromJson(Map<String, dynamic> json) {
-    print(json['flex-basis']);
     return ElementStyle(
       fontSize: _toDouble(json['fontSize']),
       color: json['color'],
@@ -210,6 +243,26 @@ class ElementStyle {
     );
   }
 
+  // ADDED: toJson (maintaining the kebab-case for keys where specified in your fromJson)
+  Map<String, dynamic> toJson() {
+    return {
+      'fontSize': fontSize,
+      'color': color,
+      'background': background,
+      'width': width,
+      'height': height,
+      'padding-top': paddingTop,
+      'padding-left': paddingLeft,
+      'padding-right': paddingRight,
+      'padding-bottom': paddingBottom,
+      'flex-grow': flexGrow,
+      'flex-shrink': flexShrink,
+      'flex-basis': flexBasis,
+      'textAlign': textAlign,
+      'font-weight': fontWeight,
+    };
+  }
+
   static double? _toDouble(dynamic value) {
     if (value == null) return null;
     if (value is num) return value.toDouble();
@@ -226,5 +279,13 @@ class ElementData {
 
   factory ElementData.fromJson(Map<String, dynamic> json) {
     return ElementData(value: json['value'], src: json['src']);
+  }
+
+  // ADDED: toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'value': value,
+      'src': src,
+    };
   }
 }

@@ -8,24 +8,33 @@ import 'models.dart';
 
 class BookService {
   // ANDROID EMULATOR FIX
-  static const String _baseUrl = '192.168.0.5:3000';
+  static const String _baseUrl = 'http://192.168.0.10:3000';
 
   Future<PageModel> parseHtmlCss({
     required String html,
     required String css,
   }) async {
-    log("currently in parseHtml with url ${_baseUrl}");
-    final response = await http.post(
-      Uri.parse('$_baseUrl/parse'),
-      headers: {'Content-Type': 'application/json'},
-    );
-    log("send request");
-    if (response.statusCode != 200) {
-      throw Exception(response.body);
-    }
+    try{
+      log("started parse");
+      final book ="book3";
+      final url=Uri.parse('$_baseUrl/getbookin/$book');
+      log("currently in parseHtml with url ${url}");
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+      log("send request");
+      if (response.statusCode != 200) {
+        throw Exception(response.body);
+      }
 
-    final decoded = jsonDecode(response.body);
-    log(response.body);
-    return PageModel.fromJson(decoded);
+      final decoded = jsonDecode(response.body);
+      return PageModel.fromJson(decoded);
+    } catch(e){
+      print(e.toString());
+      print((e as Error ).stackTrace);
+    }
+    return PageModel(version: '', book: BookModel(pages: []), bookName: '');
   }
+
 }

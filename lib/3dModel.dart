@@ -19,9 +19,12 @@ class Model3DElement extends StatelessWidget {
       autoRotate: true,
       cameraControls: true,
       disableZoom: false,
-      ar: false,
+      ar: true,
       backgroundColor: Colors.black,
       shadowIntensity: 1,
     );
   }
 }
+
+
+
