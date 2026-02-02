@@ -38,7 +38,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       log("getBook(bloc):request sent to repo with name ${event.name}");
       final pageModel = await homeRepo.getBook(event.name);
       log("getBook(bloc):response got successfully from repo");
-      emit(BookLoaded(pageModel));
+      emit(BookLoaded(pageModel,_allBooks));
       log("getBook(bloc):emitting data to ui");
     } catch (e) {
       log("getBook(bloc):emitting error ${e.toString()} from bloc");

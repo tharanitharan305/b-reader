@@ -1,5 +1,8 @@
 import 'dart:developer';
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
 class PageModel {
   final String bookName;
   final String version;
@@ -128,6 +131,9 @@ class PageElement {
   final ElementData data;
   final List<PageElement> children;
 
+  // 2. Add 'rows' property to hold the 2D grid of table cells
+  final List<List<PageElement>>? rows;
+
   PageElement({
     this.id,
     required this.type,
@@ -135,6 +141,7 @@ class PageElement {
     required this.style,
     required this.data,
     required this.children,
+    this.rows, // Add to constructor
   });
 
   factory PageElement.fromJson(Map<String, dynamic> json) {
@@ -147,23 +154,31 @@ class PageElement {
       children: (json['children'] as List? ?? [])
           .map((e) => PageElement.fromJson(e))
           .toList(),
+
+      // 3. Logic to parse 2D array: rows -> list of lists of cells
+      rows: (json['rows'] as List?)?.map((rowJson) {
+        return (rowJson as List).map((cellJson) {
+          return PageElement.fromJson(cellJson as Map<String, dynamic>);
+        }).toList();
+      }).toList(),
     );
   }
 
-  // ADDED: toJson
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'type': type.name, // Converts enum to string
+      'type': type.name,
       'frame': frame?.toJson(),
       'style': style.toJson(),
       'data': data.toJson(),
       'children': children.map((c) => c.toJson()).toList(),
+      // 4. Serialize rows back to JSON
+      'rows': rows?.map((row) => row.map((cell) => cell.toJson()).toList()).toList(),
     };
   }
 }
 
-enum ElementType { row, column, divider, text, image, video, audio, math, model3d }
+enum ElementType { row, column, divider, text, image, video, audio, math, model3d,table }
 
 extension ElementTypeX on ElementType {
   static ElementType fromString(String value) {
@@ -209,6 +224,8 @@ class ElementStyle {
   final double? width;
   final double? height;
   final double? paddingTop;
+  final double? top;
+  final double? left;
   final double? paddingLeft;
   final double? paddingRight;
   final double? paddingBottom;
@@ -221,25 +238,28 @@ class ElementStyle {
   ElementStyle({
     this.fontSize, this.color, this.background, this.width, this.height,
     this.paddingTop, this.paddingLeft, this.paddingRight, this.paddingBottom,
-    this.flexGrow, this.textAlign, this.fontWeight, this.flexShrink, this.flexBasis,
+    this.flexGrow, this.textAlign, this.fontWeight, this.flexShrink, this.flexBasis,this.top,this.left
   });
 
   factory ElementStyle.fromJson(Map<String, dynamic> json) {
+    final padding =_toDouble(json['padding']);
     return ElementStyle(
-      fontSize: _toDouble(json['fontSize']),
+      fontSize: _toDouble(json['fontSize']??"16"),
       color: json['color'],
       background: json['background'],
       width: _toDouble(json['width']),
       height: _toDouble(json['height']),
-      paddingTop: _toDouble(json['padding-top']),
-      paddingLeft: _toDouble(json['padding-left']),
-      paddingRight: _toDouble(json['padding-right']),
-      paddingBottom: _toDouble(json['padding-bottom']),
+      paddingTop: _toDouble(json['padding-top'])??padding,
+      paddingLeft: _toDouble(json['padding-left'])??padding,
+      paddingRight: _toDouble(json['padding-right'])??padding,
+      paddingBottom: _toDouble(json['padding-bottom'])??padding,
       flexGrow: _toDouble(json['flex-grow']),
       flexShrink: _toDouble(json['flex-shrink']),
       flexBasis: json['flex-basis'],
       textAlign: json['textAlign'],
       fontWeight: json['font-weight'],
+      left: _toDouble(json['left']),
+      top: _toDouble(json['top'])
     );
   }
 
@@ -275,9 +295,10 @@ class ElementData {
   final String? value;
   final String? src;
 
-  ElementData({this.value, this.src});
+  ElementData({this.value, this.src,});
 
   factory ElementData.fromJson(Map<String, dynamic> json) {
+
     return ElementData(value: json['value'], src: json['src']);
   }
 

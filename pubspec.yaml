@@ -26,6 +26,12 @@ dependencies:
   flutter_html_video: ^3.0.0
   flutter_bloc: ^9.1.1
   flutter_math_fork: ^0.7.2
+  flutter_dotenv: ^6.0.0
+  chewie: ^1.8.1
+  turn_page_transition: ^0.5.0
+  visibility_detector: ^0.4.0+2
+  page_flip_builder: ^0.1.4
+  flutter_magnifier: ^0.0.2
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +41,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+     - .env
      - assets/images/
   fonts:
      - family: Tinos

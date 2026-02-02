@@ -17,5 +17,6 @@ final class HomeError extends HomeState {
 }
 final class BookLoaded extends HomeState {
   final PageModel pageModel;
-  BookLoaded(this.pageModel);
+  final List<Book> books;
+  BookLoaded(this.pageModel,this.books);
 }

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:btab/home/bloc/home_bloc.dart';
 import 'package:btab/home/widgets/bookCard.dart';
 import 'package:btab/home/widgets/searchBook.dart';
@@ -22,13 +24,13 @@ class HomePage extends StatelessWidget {
                   builder: (context) => BookEditorScreen(pageModel: state.pageModel),
                 ),
               );
-              // Optionally refresh list after returning if needed, 
-              // but don't do it immediately as it might clear the search.
             }
           },
           child: BlocBuilder<HomeBloc, HomeState>(
-            buildWhen: (previous, current) => current is! BookLoaded,
+            // Removed buildWhen to allow the UI to react to BookLoaded and restore the list
             builder: (context, state) {
+              log("in home ui the state is $state");
+              
               if (state is HomeLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
@@ -37,7 +39,8 @@ class HomePage extends StatelessWidget {
                 return Center(child: Text(state.message));
               }
 
-              if (state is HomeLoaded) {
+              if (state is HomeLoaded || state is BookLoaded) {
+                final books = (state is HomeLoaded) ? state.books : (state as BookLoaded).books;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -48,7 +51,7 @@ class HomePage extends StatelessWidget {
                     Expanded(
                       child: GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: state.books.length,
+                        itemCount: books.length,
                         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 320,
                           crossAxisSpacing: 16,
@@ -56,7 +59,7 @@ class HomePage extends StatelessWidget {
                           childAspectRatio: 288 / 462,
                         ),
                         itemBuilder: (context, index) {
-                          final book = state.books[index];
+                          final book = books[index];
                           return Center(
                             child: Bookcard(
                               b: book,

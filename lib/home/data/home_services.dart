@@ -1,15 +1,17 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models.dart';
 import 'book.dart';
 
 class HomeServices {
-  String _baseUrl = 'http://192.168.0.10:3000';
+  static final String? _baseUrl = dotenv.env['BASEURL']??"http://192.168.0.10:3000";
 
   Future<List<Book>> getBooks() async {
+    print(dotenv.env);
     log("getBooks(service): fetching books from $_baseUrl/getbooks");
     final url = Uri.parse('$_baseUrl/getbooks');
     try {

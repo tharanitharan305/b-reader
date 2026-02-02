@@ -20,7 +20,7 @@ class Model3DElement extends StatelessWidget {
       cameraControls: true,
       disableZoom: false,
       ar: true,
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       shadowIntensity: 1,
     );
   }

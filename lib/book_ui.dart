@@ -1,8 +1,12 @@
 import 'dart:developer';
 
+import 'package:btab/home/bloc/home_bloc.dart';
 import 'package:btab/home/ui/home.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_magnifier/flutter_magnifier.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'dataTable.dart';
 import 'models.dart';
 import 'book_service.dart';
 import 'videoElement.dart';
@@ -45,58 +49,98 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
   //   }
   //   setState(() => _loading = false);
   // }
-
+bool _showMagnifier=false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        cacheExtent: 1000, // Keeps more items in memory to prevent reloading
-        slivers: [
-          SliverAppBar(
-            leading: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back_ios_new),
-            ),
-            floating: true,
-            snap: true,
-            pinned: false,
-            title: Text(_pageModel?.bookName ?? "B-Reader"),
-            actions: [
-              Row(
-                children: [
-                  IconButton(onPressed: (){}, icon: Icon(Icons.search)),
-                  IconButton(onPressed: (){}, icon: Icon(Icons.settings)),
-                  IconButton(onPressed: (){}, icon: Icon(Icons.download)),
-
+      backgroundColor: Colors.white,
+      body: Stack(
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        children: [
+          /// MAIN SCROLLABLE CONTENT
+          CustomScrollView(
+            cacheExtent: 1000,
+            slivers: [
+              SliverAppBar(
+                leading: IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.arrow_back_ios_new),
+                ),
+                floating: true,
+                snap: true,
+                pinned: false,
+                title: Text(_pageModel?.bookName ?? "B-Reader"),
+                actions: [
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _showMagnifier = !_showMagnifier;
+                      });
+                    },
+                    icon: const Icon(Icons.search),
+                  ),
+                  IconButton(onPressed: () {}, icon: const Icon(Icons.settings)),
+                  IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
                 ],
-              )
+              ),
+
+              if (_loading)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_pageModel == null || _pageModel!.book.pages.isEmpty)
+                const SliverFillRemaining(
+                  child: Center(child: Text('No preview')),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                      return _PageItem(
+                        page: _pageModel!.book.pages[index],
+                        pageNumber: index + 1,
+                        renderRecursive: _renderRecursive,
+                        cssColor: _cssColor,
+                      );
+                    },
+                    childCount: _pageModel!.book.pages.length,
+                    addAutomaticKeepAlives: true,
+                  ),
+                ),
             ],
           ),
-          if (_loading)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_pageModel == null || _pageModel!.book.pages.isEmpty)
-            const SliverFillRemaining(
-              child: Center(child: Text('No preview')),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return _PageItem(
-                    page: _pageModel!.book.pages[index],
-                    pageNumber: index + 1,
-                    renderRecursive: _renderRecursive,
-                    cssColor: _cssColor,
-                  );
-                },
-                childCount: _pageModel!.book.pages.length,
-                addAutomaticKeepAlives: true, // Crucial for state preservation
+
+          /// 🔍 MAGNIFIER OVERLAY
+          if (_showMagnifier)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + kToolbarHeight,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                // important
+                child: SizedBox(
+
+                  height: MediaQuery.of(context).size.height * 0.25,
+                  child: ClipRect(
+
+                    child: Magnifier(
+                      size: Size(
+                        MediaQuery.of(context).size.width,
+                        MediaQuery.of(context).size.height * 0.25,
+                      ),
+
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                ),
               ),
             ),
+
         ],
       ),
+
     );
   }
 
@@ -146,17 +190,34 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
     );
 
     Widget padded = Padding(padding: padding, child: boxed);
-
     if (!isRoot && e.style.flexGrow != null && e.style.flexGrow! > 0) {
       padded = Expanded(flex: e.style.flexGrow!.toInt(), child: padded);
     }
 
+    // --- FIX STARTS HERE ---
     if (e.frame != null && isRoot) {
+      // Calculate the final position by adding the absolute position (style)
+      // and the transform offset (frame)
+      final double finalLeft = (e.style.left ?? 0) + (e.frame?.x ?? 0);
+      final double finalTop = (e.style.top ?? 0)+ (e.frame?.y ?? 0);
+
+      log("${e.type.name} adding frame: Style(${(e.style.left)}, ${e.style.top}) + Frame(${e.frame?.x}, ${e.frame?.y}) = ($finalLeft, $finalTop)");
+
       return Positioned(
-        left: e.frame!.x,
-        top: e.frame!.y,
+        left: finalLeft,
+        top: finalTop,
         width: e.frame!.width ?? e.style.width,
         height: e.frame!.height ?? e.style.height,
+        child: padded,
+      );
+    }
+    // --- FIX ENDS HERE ---
+
+    // Optional: If you want non-root elements (inside flow) to also respect
+    // transforms (like 'Matrices' which has translateX(9px)), add this:
+    if (e.frame != null && (e.frame!.x != 0 || e.frame!.y != 0)) {
+      return Transform.translate(
+        offset: Offset(e.frame!.x, e.frame!.y),
         child: padded,
       );
     }
@@ -165,6 +226,7 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
   }
 
   Widget _renderLeaf(PageElement e) {
+
     switch (e.type) {
       case ElementType.text:
         return Text(
@@ -192,21 +254,27 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
       case ElementType.audio:
         return AudioElement(url: e.data.src ?? '');
       case ElementType.model3d:
-        return SizedBox(
-          height: 300,
-          width: 300,
-          child: Model3DElement(src: e.data.src ?? ''),
-        );
+        // return SizedBox(
+        //   height: 300,
+        //   width: 300,
+        //   child: Model3DElement(src: e.data.src ?? ''),
+        // );
       case ElementType.math:
+        log(e.data.value??"no math");
         return Math.tex(
           e.data.value ?? '',
           textStyle: TextStyle(
             fontSize: e.style.fontSize ?? 18,
-            color: _cssColor(e.style.color),
+            //color: //_cssColor(e.style.color),
           ),
         );
       case ElementType.divider:
         return const Divider();
+      case ElementType.table:
+        return BTable(
+          element: e,
+          renderRecursive: _renderRecursive,
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -268,16 +336,27 @@ class _PageItemState extends State<_PageItem> with AutomaticKeepAliveClientMixin
             width: widget.page.size.width,
             decoration: BoxDecoration(
               color: widget.cssColor(widget.page.background),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                )
-              ],
+              // boxShadow: [
+              //   BoxShadow(
+              //     color: Colors.black.withOpacity(0.1),
+              //     blurRadius: 10,
+              //     spreadRadius: 2,
+              //   )
+              // ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // child: Stack(
+          //   clipBehavior: Clip.none,
+          //   children: [
+          //     Positioned(
+          //       top: 574,
+          //       left: 65,
+          //       child: Container(color:Colors.red),height: 20,width: widget.page.size.width,)
+          //   ],
+          // ),
+            child: Stack(
+              clipBehavior: Clip.none,
+
+             // crossAxisAlignment: CrossAxisAlignment.start,
               children: elements.map((e) => widget.renderRecursive(e, isRoot: true)).toList(),
             ),
           ),
@@ -295,7 +374,7 @@ class _PageItemState extends State<_PageItem> with AutomaticKeepAliveClientMixin
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
-          ),
+           ),
         ],
       ),
     );

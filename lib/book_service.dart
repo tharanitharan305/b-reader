@@ -5,11 +5,11 @@ import 'dart:developer';
 import 'package:http/http.dart' as http;
 
 import 'models.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 class BookService {
   // ANDROID EMULATOR FIX
-  static const String _baseUrl = 'http://192.168.0.10:3000';
-
+   static final String? _baseUrl = dotenv.env['BASEURL'];
+  //
   Future<PageModel> parseHtmlCss({
     required String html,
     required String css,
