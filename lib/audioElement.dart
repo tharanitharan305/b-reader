@@ -35,7 +35,7 @@ class _AudioElementState extends State<AudioElement> {
           Positioned(bottom: 30, left: 20, right: 20, child: _audioBar()),
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
+    //Overlay.of(context).insert(_overlayEntry!);
   }
 
   void _removeOverlay() {

@@ -1,27 +1,36 @@
 import 'dart:developer';
 
+// Although these imports were in your original code,
+// this model is pure Dart and technically doesn't require Flutter dependencies
+// unless you plan to add UI-specific types later.
+// keeping them to ensure compatibility with your environment.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class PageModel {
+class BbookModel {
   final String bookName;
   final String version;
   final BookModel book;
 
-  PageModel({required this.version, required this.book,required this.bookName});
+  BbookModel({
+    required this.version,
+    required this.book,
+    required this.bookName
+  });
 
-  factory PageModel.fromJson(Map<String, dynamic> json) {
-    return PageModel(
-      version: json['version'],
-      book: BookModel.fromList(json['pages']),
-      bookName: json["title"]
+  factory BbookModel.fromJson(Map<String, dynamic> json) {
+    // log(json.toString());
+    return BbookModel(
+        version: json['version'] ?? "1.0.0",
+        book: BookModel.fromList(json['pages'] ?? []),
+        bookName: json["title"] ?? "Untitled"
     );
   }
 
-  // ADDED: toJson
   Map<String, dynamic> toJson() {
     return {
       'version': version,
+      'title': bookName, // Fixed: Maps bookName back to 'title'
       'pages': book.pages.map((p) => p.toJson()).toList(),
     };
   }
@@ -34,12 +43,10 @@ class BookModel {
 
   factory BookModel.fromList(List<dynamic> list) {
     return BookModel(
-      pages: list.map((e) => PageData.fromJson(e as Map<String, dynamic>)).toList(),
+      // FIXED: Safely cast incoming map to Map<String, dynamic>
+      pages: list.map((e) => PageData.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
     );
   }
-
-// Note: PageModel handles the serialization of the list
-// but we can add a helper here if needed.
 }
 
 class PageData {
@@ -58,15 +65,16 @@ class PageData {
   factory PageData.fromJson(Map<String, dynamic> json) {
     return PageData(
       id: json['id'],
-      size: PageSize.fromJson(json['size']),
-      background: json['background'],
-      layers: (json['layers'] as List)
-          .map((e) => PageLayer.fromJson(e))
+      // FIXED: Safely cast nested objects
+      size: PageSize.fromJson(Map<String, dynamic>.from(json['size'] ?? {'width': 0, 'height': 0})),
+      background: json['background'] ?? '#FFFFFF',
+      layers: (json['layers'] as List? ?? [])
+      // FIXED: Safely cast list elements
+          .map((e) => PageLayer.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
     );
   }
 
-  // ADDED: toJson
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -85,14 +93,14 @@ class PageLayer {
 
   factory PageLayer.fromJson(Map<String, dynamic> json) {
     return PageLayer(
-      name: json['name'],
-      elements: (json['elements'] as List)
-          .map((e) => PageElement.fromJson(e))
+      name: json['name'] ?? 'Layer',
+      elements: (json['elements'] as List? ?? [])
+      // FIXED: Safely cast list elements
+          .map((e) => PageElement.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
     );
   }
 
-  // ADDED: toJson
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -109,12 +117,11 @@ class PageSize {
 
   factory PageSize.fromJson(Map<String, dynamic> json) {
     return PageSize(
-      width: (json['width'] as num).toDouble(),
-      height: (json['height'] as num).toDouble(),
+      width: (json['width'] as num?)?.toDouble() ?? 0.0,
+      height: (json['height'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  // ADDED: toJson
   Map<String, dynamic> toJson() {
     return {
       'width': width,
@@ -131,7 +138,7 @@ class PageElement {
   final ElementData data;
   final List<PageElement> children;
 
-  // 2. Add 'rows' property to hold the 2D grid of table cells
+  // Holds 2D grid of table cells if type is table/grid
   final List<List<PageElement>>? rows;
 
   PageElement({
@@ -141,47 +148,68 @@ class PageElement {
     required this.style,
     required this.data,
     required this.children,
-    this.rows, // Add to constructor
+    this.rows,
   });
 
   factory PageElement.fromJson(Map<String, dynamic> json) {
     return PageElement(
       id: json['id'],
       type: ElementTypeX.fromString(json['type']),
-      frame: json['frame'] != null ? Frame.fromJson(json['frame']) : null,
-      style: ElementStyle.fromJson(json['style'] ?? {}),
-      data: ElementData.fromJson(json['data'] ?? {}),
+      // FIXED: Safely cast nested objects
+      frame: json['frame'] != null ? Frame.fromJson(Map<String, dynamic>.from(json['frame'])) : null,
+      style: ElementStyle.fromJson(Map<String, dynamic>.from(json['style'] ?? {})),
+      data: ElementData.fromJson(Map<String, dynamic>.from(json['data'] ?? {})),
       children: (json['children'] as List? ?? [])
-          .map((e) => PageElement.fromJson(e))
+      // FIXED: Safely cast list elements
+          .map((e) => PageElement.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
 
-      // 3. Logic to parse 2D array: rows -> list of lists of cells
+      // Logic to parse 2D array: rows -> list of lists of cells
       rows: (json['rows'] as List?)?.map((rowJson) {
         return (rowJson as List).map((cellJson) {
-          return PageElement.fromJson(cellJson as Map<String, dynamic>);
+          // FIXED: Safely cast cell objects
+          return PageElement.fromJson(Map<String, dynamic>.from(cellJson as Map));
         }).toList();
       }).toList(),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> json = {
       'id': id,
-      'type': type.name,
+      'type': type.name, // Ensure enum name matches JSON string expectation
       'frame': frame?.toJson(),
       'style': style.toJson(),
       'data': data.toJson(),
       'children': children.map((c) => c.toJson()).toList(),
-      // 4. Serialize rows back to JSON
-      'rows': rows?.map((row) => row.map((cell) => cell.toJson()).toList()).toList(),
     };
+
+    // Only add rows if it exists to keep JSON clean
+    if (rows != null) {
+      json['rows'] = rows!.map((row) => row.map((cell) => cell.toJson()).toList()).toList();
+    }
+
+    return json;
   }
 }
 
-enum ElementType { row, column, divider, text, image, video, audio, math, model3d,table }
+enum ElementType {
+  row,
+  column,
+  divider,
+  text,
+  image,
+  video,
+  audio,
+  math,
+  model3d,
+  table,
+  qa,
+  spl
+}
 
 extension ElementTypeX on ElementType {
-  static ElementType fromString(String value) {
+  static ElementType fromString(String? value) {
     return ElementType.values.firstWhere(
           (e) => e.name == value,
       orElse: () => ElementType.column,
@@ -206,7 +234,6 @@ class Frame {
     );
   }
 
-  // ADDED: toJson
   Map<String, dynamic> toJson() {
     return {
       'x': x,
@@ -234,37 +261,61 @@ class ElementStyle {
   final String? flexBasis;
   final String? textAlign;
   final String? fontWeight;
+  final String? alignItem;
+  final String? position;
+  final String? fontFamily;
 
   ElementStyle({
-    this.fontSize, this.color, this.background, this.width, this.height,
-    this.paddingTop, this.paddingLeft, this.paddingRight, this.paddingBottom,
-    this.flexGrow, this.textAlign, this.fontWeight, this.flexShrink, this.flexBasis,this.top,this.left
+    this.fontSize,
+    this.color,
+    this.background,
+    this.width,
+    this.height,
+    this.paddingTop,
+    this.paddingLeft,
+    this.paddingRight,
+    this.paddingBottom,
+    this.flexGrow,
+    this.textAlign,
+    this.fontWeight,
+    this.flexShrink,
+    this.flexBasis,
+    this.top,
+    this.left,
+    this.alignItem,
+    this.position,
+    this.fontFamily
   });
 
   factory ElementStyle.fromJson(Map<String, dynamic> json) {
-    final padding =_toDouble(json['padding']);
+    final padding = _toDouble(json['padding']);
     return ElementStyle(
-      fontSize: _toDouble(json['fontSize']??"16"),
-      color: json['color'],
-      background: json['background'],
-      width: _toDouble(json['width']),
-      height: _toDouble(json['height']),
-      paddingTop: _toDouble(json['padding-top'])??padding,
-      paddingLeft: _toDouble(json['padding-left'])??padding,
-      paddingRight: _toDouble(json['padding-right'])??padding,
-      paddingBottom: _toDouble(json['padding-bottom'])??padding,
-      flexGrow: _toDouble(json['flex-grow']),
-      flexShrink: _toDouble(json['flex-shrink']),
-      flexBasis: json['flex-basis'],
-      textAlign: json['textAlign'],
-      fontWeight: json['font-weight'],
-      left: _toDouble(json['left']),
-      top: _toDouble(json['top'])
+        fontSize: _toDouble(json['fontSize'] ?? "14"),
+        color: json['color'],
+        background: json['background'],
+        width: _toDouble(json['width']),
+        height: _toDouble(json['height']),
+        paddingTop: _toDouble(json['padding-top']) ?? padding,
+        paddingLeft: _toDouble(json['padding-left']) ?? padding,
+        paddingRight: _toDouble(json['padding-right']) ?? padding,
+        paddingBottom: _toDouble(json['padding-bottom']) ?? padding,
+        flexGrow: _toDouble(json['flex-grow']),
+        flexShrink: _toDouble(json['flex-shrink']),
+        flexBasis: json['flex-basis'],
+        textAlign: json['textAlign'],
+        fontWeight: json['font-weight'],
+        left: _toDouble(json['left']),
+        top: _toDouble(json['top']),
+        alignItem: json['align-items'],
+        position: json['position'],
+        fontFamily: json['font-family'] ?? "Tinos"
     );
   }
 
-  // ADDED: toJson (maintaining the kebab-case for keys where specified in your fromJson)
   Map<String, dynamic> toJson() {
+    // We filter out nulls only if your API requires strict cleanliness,
+    // otherwise returning nulls is fine.
+    // This implementation returns all keys matching the specific names from fromJson.
     return {
       'fontSize': fontSize,
       'color': color,
@@ -280,6 +331,11 @@ class ElementStyle {
       'flex-basis': flexBasis,
       'textAlign': textAlign,
       'font-weight': fontWeight,
+      'left': left,
+      'top': top,
+      'align-items': alignItem, // Mapped back to kebab-case
+      'position': position,
+      'font-family': fontFamily, // Mapped back to kebab-case
     };
   }
 
@@ -294,19 +350,229 @@ class ElementStyle {
 class ElementData {
   final String? value;
   final String? src;
+  final List<QaItem>? questions;
+  final String? title;
+  final List<String>? points;
 
-  ElementData({this.value, this.src,});
+  ElementData({
+    this.value,
+    this.src,
+    this.questions,
+    this.title,
+    this.points
+  });
 
   factory ElementData.fromJson(Map<String, dynamic> json) {
-
-    return ElementData(value: json['value'], src: json['src']);
+    return ElementData(
+      value: json['value'],
+      src: json['src'],
+      questions: (json['questions'] as List?)
+      // FIXED: Safely cast list elements
+          ?.map((q) => QaItem.fromJson(Map<String, dynamic>.from(q as Map)))
+          .toList(),
+      title: json['title'],
+      points: (json['points'] as List?)
+          ?.map((e) => e.toString())
+          .toList(),
+    );
   }
 
-  // ADDED: toJson
   Map<String, dynamic> toJson() {
     return {
       'value': value,
       'src': src,
+      'questions': questions?.map((q) => q.toJson()).toList(),
+      'title': title,
+      'points': points,
+    };
+  }
+}
+
+// ---------------------- QA Models ----------------------
+
+enum QaItemType { mcq, fill, divider }
+
+abstract class QaItem {
+  QaItemType get type;
+
+  Map<String, dynamic> toJson();
+
+  factory QaItem.fromJson(Map<String, dynamic> json) {
+    // Helper check to handle inconsistent JSON structure
+    // where some items use 'type' and others 'questionType'
+    if (json['type'] == 'divider') {
+      return QaDividerItem();
+    }
+
+    switch (json['questionType']) {
+      case 'mcq':
+        return McqItem.fromJson(json);
+      case 'fill':
+        return FillItem.fromJson(json);
+      default:
+      // Fallback or throw, depending on strictness
+        throw Exception('Unknown QA item: $json');
+    }
+  }
+}
+
+class McqItem implements QaItem {
+  @override
+  final QaItemType type = QaItemType.mcq;
+
+  final String question;
+  final List<McqOption> options;
+  final String? correctAnswerId;
+
+  McqItem({
+    required this.question,
+    required this.options,
+    this.correctAnswerId,
+  });
+
+  factory McqItem.fromJson(Map<String, dynamic> json) {
+    return McqItem(
+      question: json['question'],
+      correctAnswerId: json['answer'],
+      options: (json['options'] as List)
+      // FIXED: Safely cast list elements
+          .map((o) => McqOption.fromJson(Map<String, dynamic>.from(o as Map)))
+          .toList(),
+    );
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'questionType': 'mcq',
+      'question': question,
+      'options': options.map((o) => o.toJson()).toList(),
+      'answer': correctAnswerId,
+    };
+  }
+}
+
+class McqOption {
+  final String id;
+  final String text;
+  final bool isCorrect;
+
+  McqOption({
+    required this.id,
+    required this.text,
+    required this.isCorrect,
+  });
+
+  factory McqOption.fromJson(Map<String, dynamic> json) {
+    return McqOption(
+      id: json['id'],
+      text: json['text'],
+      isCorrect: json['isCorrect'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'text': text,
+      'isCorrect': isCorrect,
+    };
+  }
+}
+
+enum FillSegmentType { text, blank }
+
+abstract class FillSegment {
+  FillSegmentType get type;
+
+  Map<String, dynamic> toJson();
+
+  factory FillSegment.fromJson(Map<String, dynamic> json) {
+    switch (json['type']) {
+      case 'text':
+        return FillTextSegment(json['value']);
+      case 'blank':
+        return FillBlankSegment(json['id']);
+      default:
+        throw Exception('Unknown segment type: ${json['type']}');
+    }
+  }
+}
+
+class FillTextSegment implements FillSegment {
+  @override
+  final FillSegmentType type = FillSegmentType.text;
+
+  final String value;
+
+  FillTextSegment(this.value);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'text',
+      'value': value,
+    };
+  }
+}
+
+class FillBlankSegment implements FillSegment {
+  @override
+  final FillSegmentType type = FillSegmentType.blank;
+
+  final String id;
+
+  FillBlankSegment(this.id);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'blank',
+      'id': id,
+    };
+  }
+}
+
+class FillItem implements QaItem {
+  @override
+  final QaItemType type = QaItemType.fill;
+
+  final List<FillSegment> segments;
+  final String answer;
+
+  FillItem({
+    required this.segments,
+    required this.answer,
+  });
+
+  factory FillItem.fromJson(Map<String, dynamic> json) {
+    return FillItem(
+      answer: json['answer'],
+      segments: (json['segments'] as List)
+      // FIXED: Safely cast list elements
+          .map((s) => FillSegment.fromJson(Map<String, dynamic>.from(s as Map)))
+          .toList(),
+    );
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'questionType': 'fill',
+      'segments': segments.map((s) => s.toJson()).toList(),
+      'answer': answer,
+    };
+  }
+}
+
+class QaDividerItem implements QaItem {
+  @override
+  final QaItemType type = QaItemType.divider;
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'divider',
     };
   }
 }

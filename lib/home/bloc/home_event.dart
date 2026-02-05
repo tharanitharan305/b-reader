@@ -13,3 +13,8 @@ class SearchBooksEvent extends HomeEvent {
   final String query;
   SearchBooksEvent(this.query);
 }
+
+class FilterBooksEvent extends HomeEvent {
+  final String filter; // 'all', 'downloaded'
+  FilterBooksEvent(this.filter);
+}

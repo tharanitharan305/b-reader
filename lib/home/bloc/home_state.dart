@@ -13,10 +13,11 @@ final class HomeLoaded extends HomeState {
 
 final class HomeError extends HomeState {
   final String message;
-  HomeError(this.message);
+  final List<Book> books;
+  HomeError(this.message,this.books);
 }
 final class BookLoaded extends HomeState {
-  final PageModel pageModel;
+  final BbookModel pageModel;
   final List<Book> books;
   BookLoaded(this.pageModel,this.books);
 }

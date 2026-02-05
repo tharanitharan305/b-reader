@@ -8,7 +8,7 @@ import '../../models.dart';
 import 'book.dart';
 
 class HomeServices {
-  static final String? _baseUrl = dotenv.env['BASEURL']??"http://192.168.0.10:3000";
+  static final String? _baseUrl = dotenv.env['BASEURL']??"http://192.168.0.8:3000";//"http://apidev.cloud/engin";
 
   Future<List<Book>> getBooks() async {
     print(dotenv.env);
@@ -37,7 +37,7 @@ class HomeServices {
     }
   }
 
-  Future<PageModel> getBook(String title) async {
+  Future<BbookModel> getBook(String title) async {
     log("getBook(service): fetching book '$title' from $_baseUrl/getbook/$title");
     final url = Uri.parse('$_baseUrl/getbook/$title');
     try {
@@ -48,9 +48,9 @@ class HomeServices {
         log("getBook(service): error response body: ${response.body}");
         throw Exception(response.body);
       }
-      
+      log(response.body);
       final map = jsonDecode(response.body);
-      final pageModel = PageModel.fromJson(map);
+      final pageModel = BbookModel.fromJson(map);
       log("getBook(service): successfully parsed PageModel for '$title'");
       return pageModel;
     } catch (e) {

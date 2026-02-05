@@ -10,7 +10,7 @@ class BookService {
   // ANDROID EMULATOR FIX
    static final String? _baseUrl = dotenv.env['BASEURL'];
   //
-  Future<PageModel> parseHtmlCss({
+  Future<BbookModel> parseHtmlCss({
     required String html,
     required String css,
   }) async {
@@ -29,12 +29,12 @@ class BookService {
       }
 
       final decoded = jsonDecode(response.body);
-      return PageModel.fromJson(decoded);
+      return BbookModel.fromJson(decoded);
     } catch(e){
       print(e.toString());
       print((e as Error ).stackTrace);
     }
-    return PageModel(version: '', book: BookModel(pages: []), bookName: '');
+    return BbookModel(version: '', book: BookModel(pages: []), bookName: '');
   }
 
 }

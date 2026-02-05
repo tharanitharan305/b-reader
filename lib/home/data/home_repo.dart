@@ -20,7 +20,7 @@ class HomeRepo {
       rethrow;
     }
   }
-  Future<PageModel> getBook(String title) async{
+  Future<BbookModel> getBook(String title) async{
     try{
       log("getBook:entered repo with title $title");
       final pageModel=await _homeServices.getBook(title);
