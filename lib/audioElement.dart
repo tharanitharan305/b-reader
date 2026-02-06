@@ -13,7 +13,7 @@ class AudioElement extends StatefulWidget {
 class _AudioElementState extends State<AudioElement> {
   final AudioPlayer _player = AudioPlayer();
   OverlayEntry? _overlayEntry;
-
+bool isPLaying=false;
   @override
   void initState() {
     super.initState();
@@ -132,10 +132,20 @@ class _AudioElementState extends State<AudioElement> {
   Widget build(BuildContext context) {
     return IconButton(
       iconSize: 28,
-      icon: const Icon(Icons.volume_up_rounded, color: Colors.pinkAccent),
+      icon: isPLaying?  Icon(Icons.pause, color: Colors.pinkAccent):Icon(Icons.volume_up_rounded, color: Colors.pinkAccent),
       onPressed: () async {
-        await _player.play();
-        _showOverlay();
+        if(!isPLaying) {
+          setState(() {
+            isPLaying=!isPLaying;
+          });
+          await _player.play();
+        } else {
+          setState(() {
+            isPLaying=!isPLaying;
+          });
+          await _player.pause();
+        }
+
       },
     );
   }

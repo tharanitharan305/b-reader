@@ -39,6 +39,7 @@ dependencies:
   hive: ^2.2.3
   confetti: ^0.8.0
   dotted_border: ^3.1.0
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

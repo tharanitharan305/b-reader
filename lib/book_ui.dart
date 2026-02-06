@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'dart:developer' as dev;
+import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:btab/ai/data/ai_model.dart';
 import 'package:btab/ai/ui/ai_button.dart';
@@ -13,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_magnifier/flutter_magnifier.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'ai/ui/aishrimmer.dart';
 import 'dataTable.dart';
 import 'download_engine/bloc/download_bloc.dart';
 import 'models.dart';
@@ -83,19 +86,19 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
                     },
                     icon: const Icon(Icons.search),
                   ),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.settings)),
+                  // IconButton(onPressed: () {}, icon: const Icon(Icons.settings)),
                   IconButton(
                     onPressed: () {
                       context.read<DownloadBloc>().add(StartDownloadEvent(_pageModel!));
                     },
                     icon: const Icon(Icons.download),
                   ),
-                  AiIconButton(
-                    questionModel: QuestionModel(
-                        learningType: LearningType.slow,
-                        text:
-                        "Herman woke up alarmed by rhythmic footsteps around the table upstairs. He heard the sounds from the bathroom and thought a burglar was inside. His mother, startled by slamming doors, also believed burglars were present.She threw a shoe through a window to alert their neighbor, Bodwell. Bodwell called the police, but it was a mistake. The police broke the door down but found no sign of a burglar, even though they heard creaking in the attic.Herman's grandfather misunderstood the situation. He thought deserters were attacking and violently fought a policeman. A gun accidentally went off during the struggle."),
-                  )
+                  // AiIconButton(
+                  //   questionModel: QuestionModel(
+                  //       learningType: LearningType.slow,
+                  //       text:
+                  //       "Herman woke up alarmed by rhythmic footsteps around the table upstairs. He heard the sounds from the bathroom and thought a burglar was inside. His mother, startled by slamming doors, also believed burglars were present.She threw a shoe through a window to alert their neighbor, Bodwell. Bodwell called the police, but it was a mistake. The police broke the door down but found no sign of a burglar, even though they heard creaking in the attic.Herman's grandfather misunderstood the situation. He thought deserters were attacking and violently fought a policeman. A gun accidentally went off during the struggle."),
+                  // )
                 ],
               ),
               if (_loading)
@@ -325,25 +328,79 @@ class _BookEditorScreenState extends State<BookEditorScreen> {
   Widget _renderLeaf(PageElement e) {
     switch (e.type) {
       case ElementType.text:
-        return Text(
-          e.data.value ?? '',
-          softWrap: true,
-          overflow: TextOverflow.visible,
-          textAlign: _parseTextAlign(e.style.textAlign),
-          style: TextStyle(
-            fontFamily: 'Tinos',
-            fontSize: e.style.fontSize ?? 17,
-            color: _cssColor(e.style.color),
-            fontWeight: e.style.fontWeight == 'bold' ? FontWeight.bold : FontWeight.normal,
+        return GestureDetector(
+          onLongPress: () {
+            final text = e.data.value ?? '';
+
+            final style = TextStyle(
+              fontFamily: 'Tinos',
+              fontSize: e.style.fontSize ?? 17,
+              color: _cssColor(e.style.color),
+              fontWeight: e.style.fontWeight == 'bold'
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            );
+
+            final align = _parseTextAlign(e.style.textAlign);
+
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: false, // ❌ cannot tap outside
+              barrierColor: Colors.black.withOpacity(0.3),
+              transitionDuration: const Duration(milliseconds: 250),
+              pageBuilder: (_, __, ___) {
+                return BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: Center(
+                    child: AiSummaryDialog(
+                      text: text,
+                      style: style,
+                      align: align,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+          child: Text(
+            e.data.value ?? '',
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            textAlign: _parseTextAlign(e.style.textAlign),
+            style: TextStyle(
+              fontFamily: 'Tinos',
+              fontSize: e.style.fontSize ?? 17,
+              color: _cssColor(e.style.color),
+              fontWeight: e.style.fontWeight == 'bold'
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
           ),
         );
+
       case ElementType.image:
-        return Image.network(
-          e.data.src ?? '',
-          fit: e.style.alignItem == 'stretch' ? BoxFit.cover : BoxFit.contain,
-          height: e.style.height,
-          width: e.style.width,
-        );
+        final src = e.data.src ?? '';
+
+        if (src.startsWith('http')) {
+          return Image.network(
+            src,
+            fit: e.style.alignItem == 'stretch'
+                ? BoxFit.cover
+                : BoxFit.contain,
+            height: e.style.height,
+            width: e.style.width,
+          );
+        } else {
+          return Image.file(
+            File(src), // ✅ THIS IS THE FIX
+            fit: e.style.alignItem == 'stretch'
+                ? BoxFit.cover
+                : BoxFit.contain,
+            height: e.style.height,
+            width: e.style.width,
+          );
+        }
+
       case ElementType.video:
         return VideoElement(
           url: e.data.src ?? '',
@@ -440,6 +497,7 @@ class _PageItemState extends State<_PageItem> with AutomaticKeepAliveClientMixin
             height: widget.page.size.height,
             width: widget.page.size.width,
             decoration: BoxDecoration(
+
               color: widget.cssColor(widget.page.background),
             ),
             child: Column(

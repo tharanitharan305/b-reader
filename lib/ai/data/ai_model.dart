@@ -48,7 +48,6 @@ class AnswerModel {
     );
   }
 }
-
 class FinalSummary {
   final String title;
   final List<String> paragraphs;
@@ -59,19 +58,18 @@ class FinalSummary {
   });
 
   factory FinalSummary.fromJson(Map<String, dynamic> json) {
-    // ✅ Case 1: OLD format (content_flow)
+    // ✅ Case 1: OLD format
     if (json['content_flow'] != null) {
       final contentFlow = json['content_flow'] as List;
 
       return FinalSummary(
         title: json['title'] ?? '',
-        paragraphs: contentFlow
-            .map((e) => e['paragraph'] as String)
-            .toList(),
+        paragraphs:
+        contentFlow.map((e) => e['paragraph'] as String).toList(),
       );
     }
 
-    // ✅ Case 2: NEW format (events)
+    // ✅ Case 2: EVENTS format
     if (json['events'] != null) {
       return FinalSummary(
         title: json['header'] ?? '',
@@ -79,13 +77,58 @@ class FinalSummary {
       );
     }
 
-    // ❌ Fallback (never crash)
+    // ✅ Case 3: RAW fallback
+    if (json['raw_content'] != null) {
+      return FinalSummary(
+        title: "AI Summary",
+        paragraphs: [json['raw_content']],
+      );
+    }
+
+    // ✅ Case 4: ADVANCED STRUCTURE (🔥 YOUR NEW FORMAT)
+    if (json['heading'] != null ||
+        json['introduction'] != null ||
+        json['analytical_details'] != null) {
+      List<String> paragraphs = [];
+
+      // Introduction
+      if (json['introduction'] != null) {
+        paragraphs.add(json['introduction']);
+      }
+
+      // Analytical sections
+      if (json['analytical_details'] != null) {
+        for (var item in json['analytical_details']) {
+          paragraphs.add(
+              "${item['title']}\n${item['content']}");
+        }
+      }
+
+      // Conclusion
+      if (json['conclusion'] != null) {
+        paragraphs.add(json['conclusion']);
+      }
+
+      // Ending quote
+      if (json['required_ending'] != null) {
+        paragraphs.add(json['required_ending']);
+      }
+
+      return FinalSummary(
+        title: json['heading'] ?? 'AI Summary',
+        paragraphs: paragraphs,
+      );
+    }
+
+    // ❌ fallback
     return FinalSummary(
       title: '',
       paragraphs: const [],
     );
   }
 }
+
+
 
 
 

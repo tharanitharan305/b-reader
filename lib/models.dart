@@ -19,7 +19,7 @@ class BbookModel {
   });
 
   factory BbookModel.fromJson(Map<String, dynamic> json) {
-    // log(json.toString());
+    log(json.toString());
     return BbookModel(
         version: json['version'] ?? "1.0.0",
         book: BookModel.fromList(json['pages'] ?? []),

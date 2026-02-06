@@ -124,10 +124,7 @@ class Bookcard extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              if(onDel!=null)
-                IconButton(onPressed:(){
-                  onDel!(b.title);
-                }, icon: Icon(Icons.delete)),
+
               inside(b, context)
             ],
           ),

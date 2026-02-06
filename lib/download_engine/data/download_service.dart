@@ -13,7 +13,7 @@ class DownloadService {
   final Dio _dio = Dio();
   final Uuid _uuid = const Uuid();
 
-  static const String baseUrl = 'https://apidev.cloud/engin/download_file';
+  static const String baseUrl = "http://192.168.0.8:3000/download_file";//'https://apidev.cloud/engin/download_file';
 
   /// Main function to save a book offline
   Future<void> saveBookOffline(BbookModel pageModel) async {
