@@ -55,3 +55,6 @@ flutter:
      - family: Tinos
        fonts:
          - asset: assets/fonts/Tinos-Regular.ttf
+     - family: Simon
+       fonts:
+         - asset: assets/fonts/simon.ttf

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../book_ui.dart';
+import '../../math/mathdisplay.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,7 +27,9 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         appBar: AppBar(actions: [IconButton(onPressed: (){
           context.read<HomeBloc>().add(HomeGetBooksEvent());
-        }, icon: Icon(Icons.refresh))],),
+        }, icon: Icon(Icons.refresh)),TextButton(onPressed: (){
+          Navigator.push(context,MaterialPageRoute(builder: (context) => LatexViewerPage(),));
+        }, child: Text("math"))],),
         body: BlocListener<HomeBloc, HomeState>(
           listener: (context, state) {
             if (state is BookLoaded) {
