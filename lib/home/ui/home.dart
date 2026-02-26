@@ -5,6 +5,7 @@ import 'package:btab/home/bloc/home_bloc.dart';
 import 'package:btab/home/widgets/bookCard.dart';
 import 'package:btab/home/widgets/chip.dart';
 import 'package:btab/home/widgets/searchBook.dart';
+import 'package:btab/junior/junior.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -29,7 +30,9 @@ class _HomePageState extends State<HomePage> {
           context.read<HomeBloc>().add(HomeGetBooksEvent());
         }, icon: Icon(Icons.refresh)),TextButton(onPressed: (){
           Navigator.push(context,MaterialPageRoute(builder: (context) => LatexViewerPage(),));
-        }, child: Text("math"))],),
+        }, child: Text("math")),TextButton(onPressed: (){
+          Navigator.push(context,MaterialPageRoute(builder: (context) => Junior(),));
+        }, child: Text("JUNIOR"))],),
         body: BlocListener<HomeBloc, HomeState>(
           listener: (context, state) {
             if (state is BookLoaded) {

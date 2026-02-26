@@ -8,7 +8,7 @@ import '../../models.dart';
 import 'book.dart';
 
 class HomeServices {
-  static final String? _baseUrl = dotenv.env['BASEURL']??"http://192.168.0.13:3000";//"http://apidev.cloud/engin";
+  static final String? _baseUrl = dotenv.env['BASEURL']??"http://192.168.0.13:8797";//"http://apidev.cloud/engin";
 
   Future<List<Book>> getBooks() async {
     print(dotenv.env);
@@ -36,7 +36,27 @@ class HomeServices {
       throw Exception(e.toString());
     }
   }
+  Future<BbookModel> getBooktest(String title) async {
+    log("getBookTest(service): fetching book '$title' from $_baseUrl/getbook/$title");
+    final url = Uri.parse('$_baseUrl/getbook/$title');
+    try {
+      final response = await http.get(url);
+      log("getBookTest(service): status code ${response.statusCode}");
 
+      if (response.statusCode != 200) {
+        log("getBookTest(service): error response body: ${response.body}");
+        throw Exception(response.body);
+      }
+      log(response.body);
+      final map = jsonDecode(response.body);
+      final pageModel = BbookModel.fromJson(map);
+      log("getBookTest(service): successfully parsed PageModel for '$title'");
+      return pageModel;
+    } catch (e) {
+      log("getBookTest(service): exception occurred: ${e.toString()}");
+      throw Exception(e.toString());
+    }
+  }
   Future<BbookModel> getBook(String title) async {
     log("getBook(service): fetching book '$title' from $_baseUrl/getbook/$title");
     final url = Uri.parse('$_baseUrl/getbook/$title');
